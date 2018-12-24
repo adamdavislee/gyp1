@@ -1,6 +1,5 @@
 import javafx.application.Application;
 import javafx.stage.Stage;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Border;
@@ -16,127 +15,136 @@ import javafx.scene.text.Text;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
+import javafx.event.EventHandler;
+import javafx.event.ActionEvent;
 import java.util.List;
-final class terminal {
+import java.util.ArrayList;
+public class Main extends Application {
     public static void main(String[] args) {
+	launch(args);
     }
-}
-final public class Main extends Application {
-    public static void main(String[] args) {
-	    launch(args);
-    }
-    @Override
-    public void start(Stage stage) {
-	Double windowWidth = 1200.0;
-	Double windowHeight = 600.0;
-	Double windowMin = Math.min(windowWidth, windowHeight);
- 	Pane pane = new Pane();
-	Scene scene = new Scene(pane);
+    private static void drawMainScreen(Stage stage) {
+	int padding = 32;
+	int spacing = 32;
+	Inventory inventory = new Inventory();
+	InHouse part = new InHouse();
+	part.setPartID(1);
+	part.setName("foo");
+	part.setPrice(1.0);
+	part.setInStock(3);
+	part.setMin(1);
+	part.setMax(2);
+	inventory.addPart(part);
+	Text rootTitle = new Text();
+	rootTitle.setText("Inventory Management System");
+	rootTitle.setFill(Color.DARKGRAY);
+	rootTitle.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
+	Border border = new Border(new BorderStroke(Color.DARKGRAY,
+						    BorderStrokeStyle.SOLID,
+						    new CornerRadii(16),
+						    new BorderWidths(4)));
+	Text partsPaneTitle = new Text();
+	partsPaneTitle.setText("Parts");
+	partsPaneTitle.setFill(Color.DARKGRAY);
+	partsPaneTitle.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
+	Button partsSearchButton = new Button();
+	partsSearchButton.setText("Search");
+	TextField partsSearchBox = new TextField();
+	HBox partsTopRow = new HBox();
+	partsTopRow.setSpacing(spacing);
+	partsTopRow.getChildren().addAll(partsPaneTitle, partsSearchButton, partsSearchBox);
+	TableColumn partID = new TableColumn("Part ID");
+	partID.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
+	TableColumn partName = new TableColumn("Part Name");
+	partName.setCellValueFactory(new PropertyValueFactory<Part, String>("name"));
+	TableColumn partInventoryLevel = new TableColumn("Inventory Level");
+	partInventoryLevel.setCellValueFactory(new PropertyValueFactory<Part, Integer>("inStock"));
+	TableColumn partCostPerUnit = new TableColumn("Cost Per Unit");
+	partCostPerUnit.setCellValueFactory(new PropertyValueFactory<Part, Double>("price"));
+	TableView partsTable = new TableView();
+	partsTable.getColumns().addAll(partID, partName, partInventoryLevel, partCostPerUnit);
+	partsTable.setEditable(true);
+	partsTable.setItems(inventory.getParts());
+	Button partsAddButton = new Button();
+	partsAddButton.setText("Add");
+	partsAddButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    System.out.println("you clicked the partsAddButton");
+		}
+	    });
+	Button partsModifyButton = new Button();
+	partsModifyButton.setText("Modify");
+	Button partsDeleteButton = new Button();
+	partsDeleteButton.setText("Delete");
+	HBox partsLowerButtons = new HBox();
+	partsLowerButtons.setSpacing(spacing);
+	partsLowerButtons.setPadding(new Insets(padding));
+	partsLowerButtons.getChildren().addAll(partsAddButton, partsModifyButton, partsDeleteButton);
+	VBox partsPane = new VBox();
+	partsPane.setBorder(border);
+	partsPane.setPadding(new Insets(padding));
+	partsPane.setSpacing(spacing);
+	partsPane.getChildren().addAll(partsTopRow, partsTable, partsLowerButtons);
+	Text productsPaneTitle = new Text();
+	productsPaneTitle.setText("Products");
+	productsPaneTitle.setFill(Color.DARKGRAY);
+	productsPaneTitle.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
+	Button productsSearchButton = new Button();
+	productsSearchButton.setText("Search");
+	TextField productsSearchBox = new TextField();
+	HBox productsTopRow = new HBox();
+	productsTopRow.setSpacing(spacing);
+	productsTopRow.getChildren().addAll(productsPaneTitle, productsSearchButton, productsSearchBox);
+	TableColumn productID = new TableColumn("Product ID");
+	productID.setCellValueFactory(new PropertyValueFactory<Product, Integer>("productID"));
+	TableColumn productName = new TableColumn("Product Name");
+	productName.setCellValueFactory(new PropertyValueFactory<Product, String>("name"));
+	TableColumn productInventoryLevel = new TableColumn("Inventory Level");
+	productInventoryLevel.setCellValueFactory(new PropertyValueFactory<Product, Integer>("inStock"));
+	TableColumn productCostPerUnit = new TableColumn("Cost Per Unit");
+	productCostPerUnit.setCellValueFactory(new PropertyValueFactory<Product, Double>("price"));
+	TableView productsTable = new TableView();
+	productsTable.getColumns().addAll(productID, productName, productInventoryLevel, productCostPerUnit);
+	productsTable.setEditable(true);
+	productsTable.setItems(inventory.getProducts());
+	Button productsAddButton = new Button();
+	productsAddButton.setText("Add");
+	Button productsModifyButton = new Button();
+	productsModifyButton.setText("Modify");
+	Button productsDeleteButton = new Button();
+	productsDeleteButton.setText("Delete");
+	HBox productsLowerButtons = new HBox();
+	productsLowerButtons.setSpacing(spacing);
+	productsLowerButtons.setPadding(new Insets(padding));
+	productsLowerButtons.getChildren().addAll(productsAddButton, productsModifyButton, productsDeleteButton);
+	VBox productsPane = new VBox();
+	productsPane.setBorder(border);
+	productsPane.setPadding(new Insets(padding));
+	productsPane.setSpacing(spacing);
+	productsPane.getChildren().addAll(productsTopRow, productsTable, productsLowerButtons);
+	HBox partsAndProducts = new HBox();
+	partsAndProducts.setSpacing(spacing);
+	partsAndProducts.getChildren().addAll(partsPane, productsPane);
+	VBox root = new VBox();
+	root.setPadding(new Insets(padding));
+	root.setSpacing(spacing);
+	root.getChildren().addAll(rootTitle, partsAndProducts);
+	Scene scene = new Scene(root);
+	scene.setFill(Color.LIGHTGRAY);
 	stage.setScene(scene);
 	stage.show();
-	Rectangle rectangle = new Rectangle();
-	rectangle.setWidth(windowWidth);
-	rectangle.setHeight(windowHeight);
-	rectangle.setFill(Color.BLACK);
-	Text title = new Text();
-	title.setText("Inventory Management System");
-	title.setFill(Color.WHITE);
-	title.setFont(Font.font("Ubuntu", FontWeight.BOLD, windowWidth/64));
-	title.setLayoutX(windowWidth/2 - title.getLayoutBounds().getWidth()/2);
-	title.setLayoutY(windowHeight/8);
-	Border border = new Border(new BorderStroke(Color.WHITE,
-						    BorderStrokeStyle.SOLID,
-						    new CornerRadii(windowMin/128),
-						    new BorderWidths(windowMin/128)));
-	Pane partsPane = new Pane();
-	partsPane.setPrefSize(windowWidth/4 + windowWidth/16, windowHeight/2);
-	partsPane.setLayoutX(windowWidth/4-windowWidth/8);
-	partsPane.setLayoutY(windowHeight/4);
-	partsPane.setBorder(border);
-	Pane productsPane = new Pane();
-	productsPane.setPrefSize(windowWidth/4 + windowWidth/16, windowHeight/2);
-	productsPane.setLayoutX(windowWidth/2+windowWidth/16);
-	productsPane.setLayoutY(windowHeight/4);
-	productsPane.setBorder(border);
-	Text partsTitle = new Text();
-	partsTitle.setText("Parts");
-	partsTitle.setFill(Color.WHITE);
-	partsTitle.setFont(Font.font("Ubuntu", FontWeight.BOLD, windowHeight/32));
-	partsTitle.setLayoutX(partsPane.getLayoutX() + (windowWidth/4 + windowWidth/16)/4 - partsTitle.getLayoutBounds().getWidth()/2);
-	partsTitle.setLayoutY(partsPane.getLayoutY() + windowHeight/16);
-	Button searchPartsButton = new Button();
-	//searchPartsButton.setPrefSize((windowWidth/4 + windowWidth/16)/8, windowHeight/32);
-	searchPartsButton.setStyle("-fx-font-size:" + windowHeight/64);
-	searchPartsButton.setText("Search");
-	searchPartsButton.setLayoutX(partsPane.getLayoutX() + (windowWidth/4 + windowWidth/16)/2 + (windowWidth/4 + windowWidth/16)/8 - (windowWidth/4 + windowWidth/16)/4/2);
-	searchPartsButton.setLayoutY(partsPane.getLayoutY() + windowHeight/32);
-	System.out.println(searchPartsButton.getLayoutBounds());
-	pane.getChildren().addAll(rectangle, title, partsPane, productsPane, partsTitle, searchPartsButton);
-    };
-}
-abstract class Part {
-    private int partID;
-    private static String name = "Adam";
-    private double price;
-    private int inStock;
-    private int min;
-    private int max;
-    public void setPartID(int partID) {
-	this.partID = partID;
     }
-    public int getPartID() {
-	return partID;
-    }
-    public void setName(String name) {
-	this.name = name;
-    }
-    public static String getName() {
-	return name;
-    }
-    public void setPrice(double price) {
-	this.price = price;
-    }
-    public double getPrice() {
-	return price;
-    }
-    public void setInStock(int inStock) {
-	this.inStock = inStock;
-    }
-    public int getInStock() {
-	return inStock;
-    }
-    public void setMin(int min) {
-	this.min = min;
-    }
-    public int getMin() {
-	return min;
-    }
-    public void setMax(int max) {
-	this.max = max;
-    }
-    public int getMax() {
-	return max;
-    }
- }
-final class InHouse extends Part {
-    private int machine;
-    public void setMachine(int machine) {
-	this.machine = machine;
-    }
-    public int getMachine() {
-	return machine;
+    @Override public void start(Stage stage) {
+	drawMainScreen(stage);
     }
 }
-final class Outsource extends Part {
-    private String companyName;
-    public void setComanyName(String companyName) {
-	this.companyName = companyName;
-    }
-    public String getCompanyName() {
-	return companyName;
-    }   
-}
-final class Product {
+class Product {
     private List<Part> associatedParts;
     private int productID;
     private String name;
@@ -192,9 +200,19 @@ final class Product {
 	return null;
     }
 }
-final class Inventory {
-    private List<Product> products;
-    private List<Part> parts;
+class Inventory {
+    private ObservableList<Product> products;
+    private ObservableList<Part> parts;
+    public Inventory() {
+	products = FXCollections.observableArrayList();
+	parts = FXCollections.observableArrayList();
+    }
+    public ObservableList<Product> getProducts() {
+	return products;
+    }
+    public ObservableList<Part> getParts() {
+	return parts;
+    }
     public void addProduct(Product product) {
 	products.add(product);
     }
