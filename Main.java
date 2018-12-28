@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.lang.reflect.Field;
+import java.lang.Exception;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 public class Main extends Application {
@@ -41,14 +42,19 @@ public class Main extends Application {
     private static Border border = new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, new CornerRadii(16), new BorderWidths(4)));
     private static Inventory inventory = new Inventory();
     public static void main(String[] args) {
-	Outsource part = new Outsource();
-	part.setPartID(1);
-	part.setName("foo");
-	part.setInStock(1);
-	part.setMin(1);
-	part.setMax(3);
-	part.setCompanyName("Company A");
-	inventory.addPart(part);
+	Outsource legs = new Outsource();
+	InHouse seat = new InHouse();
+	Product product = new Product();
+	legs.setPartID(1);
+	legs.setName("legs");
+	seat.setPartID(2);
+	seat.setName("seat");
+	product.setProductID(1);
+	product.setName("Stool");
+	product.addAssociatedPart(legs);
+	inventory.addPart(legs);
+	inventory.addPart(seat);
+	inventory.addProduct(product);
 	launch(args);
     }
     private static void drawAddPartView(Scene scene) {
@@ -312,8 +318,7 @@ public class Main extends Application {
 				  lowerButtons);
     }
     private static void drawAddProductView(Scene scene) {
-	ObservableList<Part> addedParts = FXCollections.observableArrayList();
-	Product product = new Product();
+	Product newProduct = new Product();
 	Text title = new Text();
 	Text IDLabel = new Text();
 	TextField IDField = new TextField();
@@ -337,17 +342,18 @@ public class Main extends Application {
 	Button searchButton = new Button();
 	TextField searchField = new TextField();
 	HBox search = new HBox();
-	TableView<Part> availablePartsTable = new TableView();
+	TableView<Part> availablePartsTable = new TableView<>();
 	Button addButton = new Button();
-	TableColumn IDColumn = new TableColumn();
-	TableColumn nameColumn = new TableColumn();
-	TableColumn inventoryLevelColumn = new TableColumn();
-	TableColumn priceColumn = new TableColumn();
-	TableColumn addedIDColumn = new TableColumn();
-	TableColumn addedNameColumn = new TableColumn();
-	TableColumn addedInventoryLevelColumn = new TableColumn();
-	TableColumn addedPriceColumn = new TableColumn();
-	TableView addedPartsTable = new TableView();
+	Text errorText = new Text("The product must have at least one part.");
+	TableColumn<Part, Integer> IDColumn = new TableColumn<>();
+	TableColumn<Part, String> nameColumn = new TableColumn<>();
+	TableColumn<Part, Integer> inventoryLevelColumn = new TableColumn<>();
+	TableColumn<Part, Double> priceColumn = new TableColumn<>();
+	TableColumn<Part, Integer> addedIDColumn = new TableColumn<>();
+	TableColumn<Part, String> addedNameColumn = new TableColumn<>();
+	TableColumn<Part, Integer> addedInventoryLevelColumn = new TableColumn<>();
+	TableColumn<Part, Double> addedPriceColumn = new TableColumn<>();
+	TableView<Part> addedPartsTable = new TableView<>();
 	Button deleteButton = new Button();
 	Button saveButton = new Button();
 	Button cancelButton = new Button();
@@ -356,7 +362,8 @@ public class Main extends Application {
 	HBox borderPane = new HBox();
 	VBox root = new VBox();
 	IDLabel.setText("ID");
-	IDField.setPromptText("ID");
+	IDField.setPromptText("Automatically Generated");
+	IDField.setDisable(true);
 	ID.setSpacing(spacing);
 	ID.getChildren().addAll(IDLabel, IDField);
 	nameLabel.setText("Name");
@@ -385,6 +392,17 @@ public class Main extends Application {
 	leftSide.setSpacing(spacing);
 	leftSide.getChildren().addAll(title, ID, name, inStock, price, min, max);
 	searchButton.setText("Search");
+	searchButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    ObservableList<Part> parts = FXCollections.observableArrayList();
+		    for (Part part : inventory.getParts()) {
+			if (part.getName().contains(searchField.getText())) {
+			    parts.add(part);
+			}
+		    }
+		    availablePartsTable.setItems(parts);
+		}
+	    });
 	search.setSpacing(spacing);
 	search.getChildren().addAll(searchButton, searchField);
 	IDColumn.setText("ID");
@@ -399,19 +417,201 @@ public class Main extends Application {
 	availablePartsTable.setItems(inventory.getParts());
 	addButton.setText("Add");
 	addButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {		    
+		    newProduct.addAssociatedPart(availablePartsTable
+						 .getSelectionModel()
+						 .getSelectedItem());
+		}
+	    });
+	errorText.setFill(Color.RED);
+	addedIDColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
+	addedIDColumn.setText("ID");
+	addedNameColumn.setCellValueFactory(new PropertyValueFactory<Part, String>("name"));
+	addedNameColumn.setText("Name");
+	addedInventoryLevelColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("inventorylevel"));
+	addedInventoryLevelColumn.setText("Inventorylevel");
+	addedPriceColumn.setCellValueFactory(new PropertyValueFactory<Part, Double>("price"));
+	addedPriceColumn.setText("Price");
+	addedPartsTable.getColumns().addAll(addedIDColumn, addedNameColumn, addedInventoryLevelColumn, addedPriceColumn);
+	addedPartsTable.setItems(newProduct.getAssociatedParts());
+	deleteButton.setText("Delete");
+	deleteButton.setOnAction(new EventHandler<ActionEvent>() {
 		@Override public void handle(ActionEvent actionEvent) {
-		    Outsource part = new Outsource();
-		    //availablePartsTable.getSelectionModel().getSelectedItem()
-		    product.addAssociatedPart(part);
+		    newProduct.removeAssociatedPart(addedPartsTable.getSelectionModel().getSelectedItem());
+		}
+	    });
+	saveButton.setText("Save");
+	saveButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    int productID = 1;
+		    for (Product a : inventory.getProducts()) {
+			if (productID <= a.getProductID()) {
+			    productID = a.getProductID() + 1;
+			}
+		    }
+		    newProduct.setProductID(productID);
+		    newProduct.setName(nameField.getText());
+		    newProduct.setInStock(Integer.valueOf(inStockField.getText()));
+		    newProduct.setPrice(Double.valueOf(priceField.getText()));
+		    newProduct.setMin(Integer.valueOf(minField.getText()));
+		    newProduct.setMax(Integer.valueOf(maxField.getText()));
+		    try {
+			if (newProduct.getAssociatedParts().isEmpty()) {
+			    throw new ZeroPartsException();
+			}
+			inventory.addProduct(newProduct);
+			drawMainView(scene);	
+		    }
+		    catch (ZeroPartsException exception) {
+			if (!rightSide.getChildren().contains(errorText)) {
+			    rightSide.getChildren().add(rightSide.getChildren().indexOf(addedPartsTable), errorText);		
+			}
+		    }
+		}
+	    });
+	cancelButton.setText("Cancel");
+	cancelButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    drawMainView(scene);    
+		}
+	    });
+	lowerButtons.setSpacing(spacing);
+	lowerButtons.getChildren().addAll(saveButton, cancelButton);
+	rightSide.setSpacing(spacing);
+	rightSide.getChildren().addAll(search, availablePartsTable, addButton, addedPartsTable, deleteButton, lowerButtons);
+	borderPane.setBorder(border);
+	borderPane.setSpacing(spacing);
+	borderPane.setPadding(new Insets(padding));
+	borderPane.getChildren().addAll(leftSide, rightSide);
+	root.setPadding(new Insets(padding));
+	root.getChildren().add(borderPane);
+	scene.setRoot(root);
+    }
+    private static void drawModifyProductView(Scene scene, Product product) {
+	Text title = new Text();
+	Text IDLabel = new Text();
+	TextField IDField = new TextField();
+	HBox ID = new HBox();
+	Text nameLabel = new Text();
+	TextField nameField = new TextField();
+	HBox name = new HBox();
+	Text inStockLabel = new Text();
+	TextField inStockField = new TextField();
+	HBox inStock = new HBox();
+	Text priceLabel = new Text();
+	TextField priceField = new TextField();
+	HBox price = new HBox();
+	Text minLabel = new Text();
+	TextField minField = new TextField();
+	HBox min = new HBox();
+	Text maxLabel = new Text();
+	TextField maxField = new TextField();
+	HBox max = new HBox();
+	VBox leftSide = new VBox();
+	Button searchButton = new Button();
+	TextField searchField = new TextField();
+	HBox search = new HBox();
+	TableView<Part> availablePartsTable = new TableView<>();
+	Button addButton = new Button();
+	TableColumn<Part, Integer> IDColumn = new TableColumn<>();
+	TableColumn<Part, String> nameColumn = new TableColumn<>();
+	TableColumn<Part, Integer> inventoryLevelColumn = new TableColumn<>();
+	TableColumn<Part, Double> priceColumn = new TableColumn<>();
+	TableColumn<Part, Integer> addedIDColumn = new TableColumn<>();
+	TableColumn<Part, String> addedNameColumn = new TableColumn<>();
+	TableColumn<Part, Integer> addedInventoryLevelColumn = new TableColumn<>();
+	TableColumn<Part, Double> addedPriceColumn = new TableColumn<>();
+	TableView<Part> addedPartsTable = new TableView<>();
+	Button deleteButton = new Button();
+	Button saveButton = new Button();
+	Button cancelButton = new Button();
+	HBox lowerButtons = new HBox();
+	VBox rightSide = new VBox();
+	HBox borderPane = new HBox();
+	VBox root = new VBox();
+	IDLabel.setText("ID");
+	IDField.setPromptText("Automatically Generated");
+	IDField.setDisable(true);
+	ID.setSpacing(spacing);
+	ID.getChildren().addAll(IDLabel, IDField);
+	nameLabel.setText("Name");
+	nameField.setPromptText("Name");
+	nameField.setText(product.getName());
+	name.setSpacing(spacing);
+	name.getChildren().addAll(nameLabel, nameField);
+	inStockLabel.setText("Inventory");
+	inStockField.setPromptText("Inventory");
+	inStockField.setText(String.valueOf(product.getInStock()));
+	inStock.setSpacing(spacing);
+	inStock.getChildren().addAll(inStockLabel, inStockField);
+	priceLabel.setText("Price");
+	priceField.setPromptText("Price");
+	priceField.setText(String.valueOf(product.getPrice()));
+	price.setSpacing(spacing);
+	price.getChildren().addAll(priceLabel, priceField);
+	minLabel.setText("Min");
+	minField.setPromptText("Min");
+	minField.setText(String.valueOf(product.getMin()));
+	min.setSpacing(spacing);
+	min.getChildren().addAll(minLabel, minField);
+	maxLabel.setText("Max");
+	maxField.setPromptText("Max");
+	maxField.setText(String.valueOf(product.getMax()));
+	max.setSpacing(spacing);
+	max.getChildren().addAll(maxLabel, maxField);
+	title.setText("Add Product");
+	title.setFill(Color.DARKGRAY);
+	title.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
+	leftSide.setSpacing(spacing);
+	leftSide.getChildren().addAll(title, ID, name, inStock, price, min, max);
+	searchButton.setText("Search");
+	searchButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    ObservableList<Part> parts = FXCollections.observableArrayList();
+		    for (Part part : inventory.getParts()) {
+			if (part.getName().contains(searchField.getText())) {
+			    parts.add(part);
+			}
+		    }
+		    availablePartsTable.setItems(parts);
+		}
+	    });
+	search.setSpacing(spacing);
+	search.getChildren().addAll(searchButton, searchField);
+	IDColumn.setText("ID");
+	IDColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
+	nameColumn.setText("Name");
+	nameColumn.setCellValueFactory(new PropertyValueFactory<Part, String>("name"));
+	inventoryLevelColumn.setText("Inventory Level");
+	inventoryLevelColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("inStock"));
+	priceColumn.setText("Price");
+	priceColumn.setCellValueFactory(new PropertyValueFactory<Part, Double>("price"));
+	availablePartsTable.getColumns().addAll(IDColumn, nameColumn, inventoryLevelColumn, priceColumn);
+	availablePartsTable.setItems(inventory.getParts());
+	addButton.setText("Add");
+	addButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {		    
+		    product.addAssociatedPart(availablePartsTable
+					      .getSelectionModel()
+					      .getSelectedItem());
 		}
 	    });
 	addedIDColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
+	addedIDColumn.setText("ID");
 	addedNameColumn.setCellValueFactory(new PropertyValueFactory<Part, String>("name"));
+	addedNameColumn.setText("Name");
 	addedInventoryLevelColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("inventorylevel"));
+	addedInventoryLevelColumn.setText("Inventorylevel");
 	addedPriceColumn.setCellValueFactory(new PropertyValueFactory<Part, Double>("price"));
+	addedPriceColumn.setText("Price");
 	addedPartsTable.getColumns().addAll(addedIDColumn, addedNameColumn, addedInventoryLevelColumn, addedPriceColumn);
 	addedPartsTable.setItems(product.getAssociatedParts());
 	deleteButton.setText("Delete");
+	deleteButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    product.removeAssociatedPart(addedPartsTable.getSelectionModel().getSelectedItem());
+		}
+	    });
 	saveButton.setText("Save");
 	saveButton.setOnAction(new EventHandler<ActionEvent>() {
 		@Override public void handle(ActionEvent actionEvent) {
@@ -420,7 +620,9 @@ public class Main extends Application {
 		    product.setPrice(Double.valueOf(priceField.getText()));
 		    product.setMin(Integer.valueOf(minField.getText()));
 		    product.setMax(Integer.valueOf(maxField.getText()));
+		    inventory.removeProduct(product.getProductID());
 		    inventory.addProduct(product);
+		    drawMainView(scene);
 		}
 	    });
 	cancelButton.setText("Cancel");
@@ -448,10 +650,10 @@ public class Main extends Application {
 	Button partsSearchButton = new Button();
 	TextField partsSearchBox = new TextField();
 	HBox partsTopRow = new HBox();
-	TableColumn partID = new TableColumn("Part ID");
-	TableColumn partName = new TableColumn("Part Name");
-	TableColumn partInventoryLevel = new TableColumn("Inventory Level");
-	TableColumn partCostPerUnit = new TableColumn("Cost Per Unit");
+	TableColumn<Part, Integer> partID = new TableColumn<>("Part ID");
+	TableColumn<Part, String> partName = new TableColumn<>("Part Name");
+	TableColumn<Part, Integer> partInventoryLevel = new TableColumn<>("Inventory Level");
+	TableColumn<Part, Double> partCostPerUnit = new TableColumn<>("Cost Per Unit");
 	TableView<Part> partsTable = new TableView<>();
 	Button partsAddButton = new Button();
 	Button partsModifyButton = new Button();
@@ -462,11 +664,11 @@ public class Main extends Application {
 	Button productsSearchButton = new Button();
 	TextField productsSearchBox = new TextField();
 	HBox productsTopRow = new HBox();
-	TableColumn productID = new TableColumn("Product ID");
-	TableColumn productName = new TableColumn("Product Name");
-	TableColumn productInventoryLevel = new TableColumn("Inventory Level");
-	TableColumn productCostPerUnit = new TableColumn("Cost Per Unit");
-	TableView productsTable = new TableView();
+	TableColumn<Product, Integer> productID = new TableColumn<>("Product ID");
+	TableColumn<Product, String> productName = new TableColumn<>("Product Name");
+	TableColumn<Product, Integer> productInventoryLevel = new TableColumn<>("Inventory Level");
+	TableColumn<Product, Double> productCostPerUnit = new TableColumn<>("Cost Per Unit");
+	TableView<Product> productsTable = new TableView<>();
 	Button productsAddButton = new Button();
 	Button productsModifyButton = new Button();
 	Button productsDeleteButton = new Button();
@@ -509,14 +711,14 @@ public class Main extends Application {
 	partsModifyButton.setText("Modify");
 	partsModifyButton.setOnAction(new EventHandler<ActionEvent>() {
 		@Override public void handle(ActionEvent actionEvent) {
-		    Part part = partsTable.getSelectionModel().getSelectedItem();
-		    drawModifyPartView(scene, part);
+		    drawModifyPartView(scene, partsTable.getSelectionModel().getSelectedItem());
 		}
 	    });
 	partsDeleteButton.setText("Delete");
 	partsDeleteButton.setOnAction(new EventHandler<ActionEvent>() {
 		@Override public void handle(ActionEvent actionEvent) {
 		    inventory.removePart(partsTable.getSelectionModel().getSelectedItem().getPartID());
+		    partsTable.setItems(inventory.getParts());
 		}
 	    });
 	partsLowerButtons.setSpacing(spacing);
@@ -530,6 +732,17 @@ public class Main extends Application {
 	productsPaneTitle.setFill(Color.DARKGRAY);
 	productsPaneTitle.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
 	productsSearchButton.setText("Search");
+	productsSearchButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    ObservableList<Product> searchedProducts = FXCollections.observableArrayList();
+		    for (Product a : inventory.getProducts()) {
+			if (a.getName().contains(productsSearchBox.getText())) {
+			    searchedProducts.add(a);
+			}
+		    }
+		    productsTable.setItems(searchedProducts);
+		}
+	    });
 	productsTopRow.setSpacing(spacing);
 	productsTopRow.getChildren().addAll(productsPaneTitle, productsSearchButton, productsSearchBox);
 	productID.setCellValueFactory(new PropertyValueFactory<Product, Integer>("productID"));
@@ -545,7 +758,18 @@ public class Main extends Application {
 		}
 	    });
 	productsModifyButton.setText("Modify");
+	productsModifyButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    drawModifyProductView(scene, productsTable.getSelectionModel().getSelectedItem());
+		}
+	    });
 	productsDeleteButton.setText("Delete");
+	productsDeleteButton.setOnAction(new EventHandler<ActionEvent>() {
+		@Override public void handle(ActionEvent actionEvent) {
+		    inventory.removeProduct(productsTable.getSelectionModel().getSelectedItem().getProductID());
+		    productsTable.setItems(inventory.getProducts());
+		}
+	    });
 	productsLowerButtons.setSpacing(spacing);
 	productsLowerButtons.setPadding(new Insets(padding));
 	productsLowerButtons.getChildren().addAll(productsAddButton, productsModifyButton, productsDeleteButton);
@@ -565,17 +789,12 @@ public class Main extends Application {
 	Scene scene = new Scene(new VBox());
 	stage.setScene(scene);
 	stage.show();
-	//drawMainView(scene);
-	drawAddProductView(scene);
+	drawMainView(scene);
     }
 }
 class Inventory {
-    private ObservableList<Product> products;
-    private ObservableList<Part> parts;
-    public Inventory() {
-	products = FXCollections.observableArrayList();
-	parts = FXCollections.observableArrayList();
-    }
+    private ObservableList<Product> products = FXCollections.observableArrayList();
+    private ObservableList<Part> parts = FXCollections.observableArrayList();
     public ObservableList<Product> getProducts() {
 	return products;
     }
@@ -656,4 +875,6 @@ final class Outsource extends Part {
     public String getCompanyName() {
 	return companyName;
     }
+}
+class ZeroPartsException extends Exception {
 }
