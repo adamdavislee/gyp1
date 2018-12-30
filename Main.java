@@ -45,8 +45,10 @@ public class Main extends Application {
 	Outsource legs = new Outsource();
 	InHouse seat = new InHouse();
 	Product product = new Product();
-	legs.setPartID(1);
+	/*
+        legs.setPartID(1);
 	legs.setName("legs");
+	legs.setCompanyName("company a");
 	seat.setPartID(2);
 	seat.setName("seat");
 	product.setProductID(1);
@@ -55,6 +57,7 @@ public class Main extends Application {
 	inventory.addPart(legs);
 	inventory.addPart(seat);
 	inventory.addProduct(product);
+	*/
 	launch(args);
     }
     private static void drawAddPartView(Scene scene) {
@@ -90,8 +93,8 @@ public class Main extends Application {
 	title.setFill(Color.DARKGRAY);
 	title.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
 	inHouse.setText("In House");
-	inHouse.setToggleGroup(toggleGroup);
 	inHouse.setSelected(true);
+	inHouse.setToggleGroup(toggleGroup);
 	outsourced.setText("Outsourced");
 	outsourced.setToggleGroup(toggleGroup);
 	toggleGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
@@ -129,6 +132,7 @@ public class Main extends Application {
 	companyName.setSpacing(spacing);
 	companyName.getChildren().addAll(companyNameLabel, companyNameField);
 	machineIDLabel.setText("Machine ID");
+	machineIDField.setPromptText("Machine ID");
 	machineID.setSpacing(spacing);
 	machineID.getChildren().addAll(machineIDLabel, machineIDField);
 	saveButton.setText("Save");
@@ -223,15 +227,14 @@ public class Main extends Application {
 	title.setFont(Font.font("Ubuntu", FontWeight.BOLD, 32));
 	inHouse.setText("In House");
 	inHouse.setToggleGroup(toggleGroup);
-	inHouse.setSelected(true);
 	outsourced.setText("Outsourced");
 	outsourced.setToggleGroup(toggleGroup);
 	toggleGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
 		public void changed(ObservableValue<? extends Toggle> observableValue, Toggle oldToggle, Toggle newToggle) {
 		    if (newToggle == outsourced) {
-			root.getChildren().add(root.getChildren().size() - 1, companyName);
+			root.getChildren().add(root.getChildren().indexOf(lowerButtons), companyName);
 		    } else if (newToggle == inHouse) {
-			root.getChildren().add(root.getChildren().size() - 1, machineID);
+			root.getChildren().add(root.getChildren().indexOf(lowerButtons), machineID);
 		    }
 		    if (oldToggle == inHouse) {
 			root.getChildren().remove(machineID);
@@ -267,6 +270,7 @@ public class Main extends Application {
 	companyName.setSpacing(spacing);
 	companyName.getChildren().addAll(companyNameLabel, companyNameField);
 	machineIDLabel.setText("Machine ID");
+	machineIDField.setPromptText("Machine ID");
 	machineID.setSpacing(spacing);
 	machineID.getChildren().addAll(machineIDLabel, machineIDField);
 	saveButton.setText("Save");
@@ -307,6 +311,7 @@ public class Main extends Application {
 	lowerButtons.getChildren().addAll(saveButton, cancelButton);
 	root.setPadding(new Insets(padding));
 	root.setSpacing(spacing);
+	HBox companyNameOrMachineID;
 	root.getChildren().addAll(topRow,
 				  new HBox(spacing, IDLabel, IDField),
 				  new HBox(spacing, nameLabel, nameField),
@@ -314,8 +319,14 @@ public class Main extends Application {
 				  new HBox(spacing, costLabel, costField),
 				  new HBox(spacing, minLabel, minField),
 				  new HBox(spacing, maxLabel, maxField),
-				  machineID,
 				  lowerButtons);
+	if (selectedPart instanceof Outsource) {
+	    companyNameField.setText(((Outsource) selectedPart).getCompanyName());
+	    outsourced.setSelected(true);
+	} else if (selectedPart instanceof InHouse) {
+	    machineIDField.setText(String.valueOf(((InHouse) selectedPart).getMachineID()));
+	    inHouse.setSelected(true);
+	}
     }
     private static void drawAddProductView(Scene scene) {
 	Product newProduct = new Product();
@@ -329,6 +340,7 @@ public class Main extends Application {
 	Text inStockLabel = new Text();
 	TextField inStockField = new TextField();
 	HBox inStock = new HBox();
+	Text bankruptcyErrorText = new Text();
 	Text priceLabel = new Text();
 	TextField priceField = new TextField();
 	HBox price = new HBox();
@@ -344,7 +356,7 @@ public class Main extends Application {
 	HBox search = new HBox();
 	TableView<Part> availablePartsTable = new TableView<>();
 	Button addButton = new Button();
-	Text errorText = new Text("The product must have at least one part.");
+	Text errorText = new Text();
 	TableColumn<Part, Integer> IDColumn = new TableColumn<>();
 	TableColumn<Part, String> nameColumn = new TableColumn<>();
 	TableColumn<Part, Integer> inventoryLevelColumn = new TableColumn<>();
@@ -374,6 +386,8 @@ public class Main extends Application {
 	inStockField.setPromptText("Inventory");
 	inStock.setSpacing(spacing);
 	inStock.getChildren().addAll(inStockLabel, inStockField);
+	bankruptcyErrorText.setText("The cost of a product cannot be less than the cost of it's parts.");
+	bankruptcyErrorText.setFill(Color.RED);
 	priceLabel.setText("Price");
 	priceField.setPromptText("Price");
 	price.setSpacing(spacing);
@@ -423,6 +437,7 @@ public class Main extends Application {
 						 .getSelectedItem());
 		}
 	    });
+	errorText.setText("The product must have at least one part.");
 	errorText.setFill(Color.RED);
 	addedIDColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
 	addedIDColumn.setText("ID");
@@ -455,16 +470,32 @@ public class Main extends Application {
 		    newProduct.setPrice(Double.valueOf(priceField.getText()));
 		    newProduct.setMin(Integer.valueOf(minField.getText()));
 		    newProduct.setMax(Integer.valueOf(maxField.getText()));
+		    int totalPartsCost = 0;
+		    for (Part a : newProduct.getAssociatedParts()) {
+			totalPartsCost += a.getPrice();
+		    }
 		    try {
 			if (newProduct.getAssociatedParts().isEmpty()) {
 			    throw new ZeroPartsException();
+			} else if (rightSide.getChildren().contains(errorText)) {
+			    rightSide.getChildren().remove(errorText);
+			}
+			if (newProduct.getPrice() < totalPartsCost) {
+			    throw new PotentialBankruptcyException();
+			} else if (leftSide.getChildren().contains(bankruptcyErrorText)) {
+			    leftSide.getChildren().remove(bankruptcyErrorText);
 			}
 			inventory.addProduct(newProduct);
-			drawMainView(scene);	
+			drawMainView(scene);
 		    }
 		    catch (ZeroPartsException exception) {
 			if (!rightSide.getChildren().contains(errorText)) {
 			    rightSide.getChildren().add(rightSide.getChildren().indexOf(addedPartsTable), errorText);		
+			}
+		    }
+		    catch (PotentialBankruptcyException potentialBankruptcyException) {
+			if (!leftSide.getChildren().contains(bankruptcyErrorText)) {
+			    leftSide.getChildren().add(leftSide.getChildren().indexOf(price), bankruptcyErrorText);
 			}
 		    }
 		}
@@ -498,6 +529,7 @@ public class Main extends Application {
 	Text inStockLabel = new Text();
 	TextField inStockField = new TextField();
 	HBox inStock = new HBox();
+	Text bankruptcyErrorText = new Text();
 	Text priceLabel = new Text();
 	TextField priceField = new TextField();
 	HBox price = new HBox();
@@ -513,6 +545,7 @@ public class Main extends Application {
 	HBox search = new HBox();
 	TableView<Part> availablePartsTable = new TableView<>();
 	Button addButton = new Button();
+	Text errorText = new Text();
 	TableColumn<Part, Integer> IDColumn = new TableColumn<>();
 	TableColumn<Part, String> nameColumn = new TableColumn<>();
 	TableColumn<Part, Integer> inventoryLevelColumn = new TableColumn<>();
@@ -544,6 +577,8 @@ public class Main extends Application {
 	inStockField.setText(String.valueOf(product.getInStock()));
 	inStock.setSpacing(spacing);
 	inStock.getChildren().addAll(inStockLabel, inStockField);
+	bankruptcyErrorText.setText("The cost of a product cannot be less than the cost of it's parts.");
+	bankruptcyErrorText.setFill(Color.RED);
 	priceLabel.setText("Price");
 	priceField.setPromptText("Price");
 	priceField.setText(String.valueOf(product.getPrice()));
@@ -596,6 +631,8 @@ public class Main extends Application {
 					      .getSelectedItem());
 		}
 	    });
+	errorText.setText("The product must have at least one part.");
+	errorText.setFill(Color.RED);
 	addedIDColumn.setCellValueFactory(new PropertyValueFactory<Part, Integer>("partID"));
 	addedIDColumn.setText("ID");
 	addedNameColumn.setCellValueFactory(new PropertyValueFactory<Part, String>("name"));
@@ -620,9 +657,36 @@ public class Main extends Application {
 		    product.setPrice(Double.valueOf(priceField.getText()));
 		    product.setMin(Integer.valueOf(minField.getText()));
 		    product.setMax(Integer.valueOf(maxField.getText()));
-		    inventory.removeProduct(product.getProductID());
-		    inventory.addProduct(product);
-		    drawMainView(scene);
+		    int totalPartsCost = 0;
+		    for (Part a : product.getAssociatedParts()) {
+			totalPartsCost += a.getPrice();
+		    }
+		    try {
+			if (product.getAssociatedParts().isEmpty()) {
+			    System.out.println("foo");
+			    throw new ZeroPartsException();
+			} else if (rightSide.getChildren().contains(errorText)) {
+			    rightSide.getChildren().remove(errorText);
+			}
+			if (product.getPrice() < totalPartsCost) {
+			    throw new PotentialBankruptcyException();
+			} else if (leftSide.getChildren().contains(bankruptcyErrorText)) {
+			    leftSide.getChildren().remove(bankruptcyErrorText);
+			}
+			inventory.removeProduct(product.getProductID());
+			inventory.addProduct(product);
+			drawMainView(scene);
+		    }
+		    catch (ZeroPartsException exception) {
+			if (!rightSide.getChildren().contains(errorText)) {
+			    rightSide.getChildren().add(rightSide.getChildren().indexOf(addedPartsTable), errorText);		
+			}
+		    }
+		    catch (PotentialBankruptcyException potentialBankruptcyException) {
+			if (!leftSide.getChildren().contains(bankruptcyErrorText)) {
+			    leftSide.getChildren().add(leftSide.getChildren().indexOf(price), bankruptcyErrorText);
+			}
+		    }
 		}
 	    });
 	cancelButton.setText("Cancel");
@@ -877,4 +941,6 @@ final class Outsource extends Part {
     }
 }
 class ZeroPartsException extends Exception {
+}
+class PotentialBankruptcyException extends Exception {
 }
