@@ -41,23 +41,45 @@ public class Main extends Application {
     private static int spacing = 32;
     private static Border border = new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, new CornerRadii(16), new BorderWidths(4)));
     private static Inventory inventory = new Inventory();
+    /* 
+     * This is intended to be the entry point for the program.
+     * @param args command line arguments, which are not used by this method.
+     */
     public static void main(String[] args) {
 	Outsource legs = new Outsource();
 	InHouse seat = new InHouse();
-	Product product = new Product();
-	legs.setPartID(1);
-	legs.setName("legs");
-	legs.setCompanyName("company a");
-	seat.setPartID(2);
-	seat.setName("seat");
-	product.setProductID(1);
-	product.setName("Stool");
-	product.addAssociatedPart(legs);
+	Product chair = new Product();
 	inventory.addPart(legs);
 	inventory.addPart(seat);
-	inventory.addProduct(product);
+	inventory.addProduct(chair);
+	legs.setPartID(1);
+	legs.setName("legs");
+	legs.setInStock(8);
+	legs.setPrice(1.5);
+	legs.setMin(1);
+	legs.setMax(16);
+	legs.setCompanyName("Chair Legs \"R\" Us");
+	seat.setPartID(2);
+	seat.setName("seat");
+	seat.setPrice(1.5);
+	seat.setInStock(2);
+	seat.setMin(1);
+	seat.setMax(16);
+	seat.setMachineID(1);
+	chair.setProductID(1);
+	chair.setName("Chair");
+	chair.setInStock(4);
+	chair.setPrice(4.99);
+	chair.setMin(1);
+	chair.setMax(16);
+	chair.addAssociatedPart(seat);
+	chair.addAssociatedPart(legs);
 	launch(args);
     }
+    /*
+     * This method sets up the UI for adding new parts and sets the root pane of the scene to it.
+     * @param scene the scene to change to the new UI
+     */
     private static void drawAddPartView(Scene scene) {
 	Text title = new Text();
 	RadioButton inHouse = new RadioButton();
@@ -152,20 +174,20 @@ public class Main extends Application {
 			newPart.setCompanyName(companyNameField.getText());
 			newPart.setPartID(newPartID);
 			newPart.setName(nameField.getText());
-			newPart.setPrice(new Double(costField.getText()));
-			newPart.setInStock(new Integer(inventoryField.getText()));
-			newPart.setMin(new Integer(minField.getText()));
-			newPart.setMax(new Integer(maxField.getText()));
+			newPart.setPrice(Double.valueOf(costField.getText()));
+			newPart.setInStock(Integer.valueOf(inventoryField.getText()));
+			newPart.setMin(Integer.valueOf(minField.getText()));
+			newPart.setMax(Integer.valueOf(maxField.getText()));
 			inventory.addPart(newPart);
 		    } else {
 			InHouse newPart = new InHouse();
-			newPart.setMachineID(new Integer(machineIDField.getText()));
+			newPart.setMachineID(Integer.valueOf(machineIDField.getText()));
 			newPart.setPartID(newPartID);
 			newPart.setName(nameField.getText());
-			newPart.setPrice(new Double(costField.getText()));
-			newPart.setInStock(new Integer(inventoryField.getText()));
-			newPart.setMin(new Integer(minField.getText()));
-			newPart.setMax(new Integer(maxField.getText()));
+			newPart.setPrice(Double.valueOf(costField.getText()));
+			newPart.setInStock(Integer.valueOf(inventoryField.getText()));
+			newPart.setMin(Integer.valueOf(minField.getText()));
+			newPart.setMax(Integer.valueOf(maxField.getText()));
 			inventory.addPart(newPart);
 		    }
 		    drawMainView(scene);
@@ -191,6 +213,11 @@ public class Main extends Application {
 				  machineID,
 				  lowerButtons);
     }
+    /*
+     * This sets up the UI for modifying an existing part and sets the root pane of the scene to it.
+     * @param scene the scene to change to the new UI
+     * @param selectedPart the part to be modified (intended to be the part that the user selected in the TableView of the main UI)
+     */
     private static void drawModifyPartView(Scene scene, Part selectedPart) {
 	Text title = new Text();
 	RadioButton inHouse = new RadioButton();
@@ -280,20 +307,20 @@ public class Main extends Application {
 			newPart.setCompanyName(companyNameField.getText());
 			newPart.setPartID(selectedPart.getPartID());
 			newPart.setName(nameField.getText());
-			newPart.setPrice(new Double(costField.getText()));
-			newPart.setInStock(new Integer(inventoryField.getText()));
-			newPart.setMin(new Integer(minField.getText()));
-			newPart.setMax(new Integer(maxField.getText()));
+			newPart.setPrice(Double.valueOf(costField.getText()));
+			newPart.setInStock(Integer.valueOf(inventoryField.getText()));
+			newPart.setMin(Integer.valueOf(minField.getText()));
+			newPart.setMax(Integer.valueOf(maxField.getText()));
 			inventory.addPart(newPart);
 		    } else {
 			InHouse newPart = new InHouse();
-			newPart.setMachineID(new Integer(machineIDField.getText()));
+			newPart.setMachineID(Integer.valueOf(machineIDField.getText()));
 			newPart.setPartID(selectedPart.getPartID());
 			newPart.setName(nameField.getText());
-			newPart.setPrice(new Double(costField.getText()));
-			newPart.setInStock(new Integer(inventoryField.getText()));
-			newPart.setMin(new Integer(minField.getText()));
-			newPart.setMax(new Integer(maxField.getText()));
+			newPart.setPrice(Double.valueOf(costField.getText()));
+			newPart.setInStock(Integer.valueOf(inventoryField.getText()));
+			newPart.setMin(Integer.valueOf(minField.getText()));
+			newPart.setMax(Integer.valueOf(maxField.getText()));
 			inventory.addPart(newPart);
 		    }
 		    drawMainView(scene);
@@ -326,6 +353,10 @@ public class Main extends Application {
 	    inHouse.setSelected(true);
 	}
     }
+    /*
+     * This sets up the UI for adding a new product and sets the root pane of the scene to it.
+     * @param scene the scene to change to the new UI
+     */
     private static void drawAddProductView(Scene scene) {
 	Product newProduct = new Product();
 	Text title = new Text();
@@ -516,6 +547,11 @@ public class Main extends Application {
 	root.getChildren().add(borderPane);
 	scene.setRoot(root);
     }
+    /*
+     * This sets up the UI for modifying an existing product and sets the root pane of the scene to it.
+     * @param scene the scene to change to the new UI
+     * @param product the product to be modified (intended to be the product that user selected in the TableView of the Main UI)
+     */
     private static void drawModifyProductView(Scene scene, Product product) {
 	Text title = new Text();
 	Text IDLabel = new Text();
@@ -655,13 +691,12 @@ public class Main extends Application {
 		    product.setPrice(Double.valueOf(priceField.getText()));
 		    product.setMin(Integer.valueOf(minField.getText()));
 		    product.setMax(Integer.valueOf(maxField.getText()));
-		    int totalPartsCost = 0;
+		    Double totalPartsCost = 0.0;
 		    for (Part a : product.getAssociatedParts()) {
 			totalPartsCost += a.getPrice();
 		    }
 		    try {
 			if (product.getAssociatedParts().isEmpty()) {
-			    System.out.println("foo");
 			    throw new ZeroPartsException();
 			} else if (rightSide.getChildren().contains(errorText)) {
 			    rightSide.getChildren().remove(errorText);
@@ -705,6 +740,10 @@ public class Main extends Application {
 	root.getChildren().add(borderPane);
 	scene.setRoot(root);
     }
+    /*
+     * This sets up the main UI of the application and sets the root pane of the scene to it.  
+     * @param scene the scene to change to the new UI
+     */
     private static void drawMainView(Scene scene) {
 	InHouse part = new InHouse();
 	Text rootTitle = new Text();
@@ -847,98 +886,14 @@ public class Main extends Application {
 	scene.setFill(Color.LIGHTGRAY);
 	scene.setRoot(root);
     }
+    /*
+     * This method is overriden since the class extends Application.
+     * @param stage necessary for setting the scene for the application.
+     */
     @Override public void start(Stage stage) {
 	Scene scene = new Scene(new VBox());
 	stage.setScene(scene);
 	stage.show();
 	drawMainView(scene);
     }
-}
-class Inventory {
-    private ObservableList<Product> products = FXCollections.observableArrayList();
-    private ObservableList<Part> parts = FXCollections.observableArrayList();
-    public ObservableList<Product> getProducts() {
-	return products;
-    }
-    public ObservableList<Part> getParts() {
-	return parts;
-    }
-    public void addProduct(Product product) {
-	products.add(product);
-    }
-    public boolean removeProduct(int productID) {
-	for (Product product : products) {
-	    if (product.getProductID() == productID) {
-		products.remove(product);
-		return true;
-	    }
-	}
-	return false;
-    }
-    public Product lookupProduct(int productID) {
-	for (Product product : products) {
-	    if (product.getProductID() == productID) {
-		return product;
-	    }
-	}
-	return null;
-    }
-    public void updateProduct(int productID, Product newProduct) {
-	for (Product product : products) {
-	    if (product.getProductID() == productID) {
-		products.remove(product);
-		products.add(newProduct);
-	    }
-	}
-    }
-    public void addPart(Part part) {
-	parts.add(part);
-    }
-    public boolean removePart(int partID) {
-	for (Part part : parts) {
-	    if (part.getPartID() == partID) {
-		parts.remove(part);
-		return true;
-	    }
-	}
-	return false;
-    }
-    public Part lookupPart(int partID) {
-	for (Part part : parts) {
-	    if (part.getPartID() == partID) {
-		return part;
-	    }
-	}
-	return null;
-    }
-    public void updatePart(int partID, Part newPart) {
-	for (Part part : parts) {
-	    if (part.getPartID() == partID) {
-		parts.remove(part);
-		parts.add(newPart);
-	    }
-	}
-    }
-}
-final class InHouse extends Part {
-    private int machineID;
-    public void setMachineID(int machineID) {
-	this.machineID = machineID;
-    }
-    public int getMachineID() {
-	return machineID;
-    }
-}
-final class Outsource extends Part {
-    private String companyName;
-    public void setCompanyName(String companyName) {
-	this.companyName = companyName;
-    }
-    public String getCompanyName() {
-	return companyName;
-    }
-}
-class ZeroPartsException extends Exception {
-}
-class PotentialBankruptcyException extends Exception {
 }

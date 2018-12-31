@@ -20,7 +20,7 @@ public abstract class Part {
     public void setPrice(double price) {
 	this.price = price;
     }
-    public double getPrice() {
+    public Double getPrice() {
 	return price;
     }
     public void setInStock(int inStock) {
